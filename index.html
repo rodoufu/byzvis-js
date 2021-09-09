@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>ByzVis</title>
+    <script type="text/javascript" src="d3/dist/d3.js"></script>
+    <script type="text/javascript" src="js/byz.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+</head>
+<body>
+<script type="text/javascript">
+	"use strict";
+
+	class Message {
+		constructor(moment, source, target, status) {
+			this.moment = parseInt(moment);
+			this.source = parseInt(source);
+			this.target = parseInt(target);
+			this.status = parseInt(status);
+		}
+
+		isUnexpected() {
+			return this.status === 0;
+		}
+
+		isSuccess() {
+			return this.status === 1;
+		}
+
+		isNotDelivered() {
+			return this.status === 2;
+		}
+
+		isTampered() {
+			return this.status === 3;
+		}
+	}
+
+	class General {
+		constructor(id, x, y) {
+			id = parseInt(id);
+			this.id = `G${id}`;
+			this.x = x;
+			this.y = y;
+		}
+
+		draw(body) {
+			body.append("svg").attr("width", 50).attr("height", 50).attr('class', `general ${this.id}`)
+				.append('circle')
+				.attr('cx', 25)
+				.attr('cy', 25)
+				.attr('r', 12)
+				.attr('stroke', 'black')
+				.attr('fill', '#69a3b2');
+			$(`svg.${this.id}`).css({top: this.y, left: this.x, position: 'absolute'});
+		}
+	}
+
+	$(document).ready(function () {
+		let body = d3.select("body");
+		const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+		const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+		console.log(width, height);
+
+		d3.csv('example.csv').then(function (data) {
+			let messages = [];
+			let numberOfGenerals = 0;
+			let maxTime = 0;
+
+			for (let i = 0; i < data.length; i++) {
+				const message = new Message(data[i].moment, data[i].source, data[i].target, data[i].status);
+				messages.push(message);
+				if (numberOfGenerals < message.source) {
+					numberOfGenerals = message.source;
+				}
+				if (numberOfGenerals < message.target) {
+					numberOfGenerals = message.target;
+				}
+				if (maxTime < message.moment) {
+					maxTime = message.moment;
+				}
+			}
+			numberOfGenerals++;
+			maxTime++;
+			body.append("p").text(`${numberOfGenerals} generals, and ${maxTime} time slots`);
+
+			let generals = [];
+			const radius = 10 * numberOfGenerals;
+			for (let i = 0; i < numberOfGenerals; i++) {
+				let general = new General(i,
+					Math.round(width / 2 + radius * Math.cos(i * 2 * Math.PI / numberOfGenerals)),
+					Math.round(height / 2 + radius * Math.sin(i * 2 * Math.PI / numberOfGenerals))
+				);
+				generals.push(general);
+				general.draw(body);
+				console.log(general);
+			}
+		});
+	})
+	;
+</script>
+</body>
+</html>
