@@ -49,28 +49,54 @@
 				.append('circle')
 				.attr('cx', 25)
 				.attr('cy', 25)
-				.attr('r', 12)
+				.attr('r', 20)
 				.attr('stroke', 'black')
-				.attr('fill', '#69a3b2');
+				.attr('fill', '#578430');
 			$(`svg.${this.id}`).css({top: this.y, left: this.x, position: 'absolute'});
+		}
+
+		async sendMessage(body, target, message, duration) {
+			let msgId = `${this.id}to${target.id}`;
+			let msg = body.append("svg").attr("width", 50).attr("height", 50).attr('class', `message ${msgId}`);
+			let rect = msg.append("rect")
+				.attr('x', 15)
+				.attr('y', 15)
+				.attr('width', 20)
+				.attr('height', 20)
+				.attr('stroke', 'black')
+				.attr('fill', '#69c2ef');
+			$(`svg.${msgId}`).css({top: this.y, left: this.x, position: 'absolute'});
+
+			let transition = msg.transition()
+				.attr("style", `top: ${target.y}px; left: ${target.x}px; position: absolute;`);
+			if (message.isNotDelivered()) {
+				transition = transition.attr('opacity', 0.5);
+			} else if (message.isTampered()) {
+				rect.transition().attr('fill', '#e8b510').duration(duration);
+			}
+			await transition.duration(duration).end();
+			msg.transition().remove();
 		}
 	}
 
-	$(document).ready(function () {
-		let body = d3.select("body");
-		const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-		const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-
-		console.log(width, height);
-
-		d3.csv('example.csv').then(function (data) {
-			let messages = [];
+	$(document).ready(() => {
+		d3.csv('larger.csv').then((data) => {
 			let numberOfGenerals = 0;
 			let maxTime = 0;
+			let body = d3.select("body");
+			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+			let timeMessage = new Map();
 
 			for (let i = 0; i < data.length; i++) {
 				const message = new Message(data[i].moment, data[i].source, data[i].target, data[i].status);
+				let messages = [];
+				if (timeMessage.has(message.moment)) {
+					messages = timeMessage.get(message.moment);
+				}
 				messages.push(message);
+				timeMessage.set(message.moment, messages);
+
 				if (numberOfGenerals < message.source) {
 					numberOfGenerals = message.source;
 				}
@@ -86,7 +112,7 @@
 			body.append("p").text(`${numberOfGenerals} generals, and ${maxTime} time slots`);
 
 			let generals = [];
-			const radius = 10 * numberOfGenerals;
+			const radius = 15 * numberOfGenerals;
 			for (let i = 0; i < numberOfGenerals; i++) {
 				let general = new General(i,
 					Math.round(width / 2 + radius * Math.cos(i * 2 * Math.PI / numberOfGenerals)),
@@ -94,11 +120,30 @@
 				);
 				generals.push(general);
 				general.draw(body);
-				console.log(general);
 			}
+
+			const timeSlot = 1000;
+			let current = 0;
+			const interval = setInterval(() => {
+				if (timeMessage.has(current)) {
+					let messages = timeMessage.get(current);
+					for (let message of messages) {
+						const source = generals[message.source];
+						const target = generals[message.target];
+
+						source.sendMessage(body, target, message, timeSlot);
+						// console.log(message);
+					}
+				}
+				if (current === maxTime) {
+					console.log("Finished");
+					clearInterval(interval);
+					current = 0;
+				}
+				current++;
+			}, timeSlot);
 		});
-	})
-	;
+	});
 </script>
 </body>
 </html>
