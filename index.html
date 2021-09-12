@@ -188,7 +188,7 @@
 
 	$(document).ready(() => {
 		let byzVis = null;
-		d3.csv('larger.csv').then((data) => {
+		d3.csv('problems/larger.csv').then((data) => {
 			let body = d3.select("body div#byzvis");
 			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
@@ -199,7 +199,7 @@
 
 		$("#playPause").click(() => {
 			if (byzVis) {
-			    let body = d3.select("body div#byzvis");
+				let body = d3.select("body div#byzvis");
 				if (byzVis.isRunning()) {
 					byzVis.stop();
 				} else {
