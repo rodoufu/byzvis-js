@@ -60,6 +60,8 @@
 				<select class="form-select" aria-label="Select the problem" id="selectProblem">
 					<option selected value="problems/example.csv">Example</option>
 					<option value="problems/16generals5moments.csv">15 generals 5 moments</option>
+					<option value="problems/4generals4moments.csv">4 generals 4 moments</option>
+					<option value="problems/4generals4moments2x.csv">4 generals 4 moments 8 messages</option>
 				</select>
 			</div>
 			<div class="col-sm-10">
@@ -134,14 +136,23 @@
 		}
 
 		draw(body) {
-			body.append("svg").attr("width", 50).attr("height", 50).attr('class', `general ${this.id}`)
-				.attr('id', `${this.id}`)
-				.append('circle')
+			let svg = body.append("svg").attr("width", 66).attr("height", 50).attr('class', `general ${this.id}`)
+				.attr('id', `${this.id}`);
+
+			svg.append('circle')
 				.attr('cx', 25)
 				.attr('cy', 25)
 				.attr('r', 20)
 				.attr('stroke', 'black')
 				.attr('fill', '#578430');
+
+			let thisId = this.id;
+			svg.append(`text`)
+				.attr("x", 46)
+				.attr("y", 25)
+				.attr("dy", ".35em").text((d, i) => {
+				return thisId;
+			});
 			$(`svg.${this.id}`).css({top: this.y, left: this.x, position: 'absolute'});
 		}
 
@@ -276,8 +287,7 @@
 						$(timeRange).val(0);
 						new CountMessageType().draw();
 					} else {
-						let currentScore = this.scoreBoard.get(this.current);
-						currentScore.draw();
+						this.updateScore();
 						this.current++;
 					}
 				}, this.timeSlot);
@@ -293,6 +303,11 @@
 
 		isRunning() {
 			return this.interval;
+		}
+
+		updateScore() {
+			let currentScore = this.scoreBoard.get(this.current);
+			currentScore.draw();
 		}
 	}
 
@@ -333,6 +348,7 @@
 
 		$(timeRange).change(() => {
 			byzVis.current = parseInt($(timeRange).val());
+			byzVis.updateScore();
 		});
 
 		$(selectProblem).change(() => {
