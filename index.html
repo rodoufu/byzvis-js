@@ -2,12 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ByzVis</title>
     <script type="text/javascript" src="js/d3.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"
             integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
 </head>
 <body>
+<div class="container">
+    <div id="byzvis" class="container">
+    </div>
+    <div class="container fixed-bottom">
+        <div class="mb-3 row">
+            <div class="col-sm-2">
+                <button type="button" id="playPause" class="btn btn-primary">Play</button>
+            </div>
+            <div class="col-sm-10">
+                <label for="timeRange" class="form-label">Time range</label>
+                <input type="range" class="form-range" id="timeRange">
+            </div>
+        </div>
+    </div>
+</div>
 <script type="text/javascript">
 	"use strict";
 
@@ -79,69 +99,113 @@
 		}
 	}
 
-	$(document).ready(() => {
-		d3.csv('larger.csv').then((data) => {
-			let numberOfGenerals = 0;
-			let maxTime = 0;
-			let body = d3.select("body");
-			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
-			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
-			let timeMessage = new Map();
+	class ByzantineVisualization {
+		constructor(data, width, height, timeSlot) {
+			this.numberOfGenerals = 0;
+			this.maxTime = 0;
 
+			this.timeMessage = new Map();
 			for (let i = 0; i < data.length; i++) {
 				const message = new Message(data[i].moment, data[i].source, data[i].target, data[i].status);
 				let messages = [];
-				if (timeMessage.has(message.moment)) {
-					messages = timeMessage.get(message.moment);
+				if (this.timeMessage.has(message.moment)) {
+					messages = this.timeMessage.get(message.moment);
 				}
 				messages.push(message);
-				timeMessage.set(message.moment, messages);
+				this.timeMessage.set(message.moment, messages);
 
-				if (numberOfGenerals < message.source) {
-					numberOfGenerals = message.source;
+				if (this.numberOfGenerals < message.source) {
+					this.numberOfGenerals = message.source;
 				}
-				if (numberOfGenerals < message.target) {
-					numberOfGenerals = message.target;
+				if (this.numberOfGenerals < message.target) {
+					this.numberOfGenerals = message.target;
 				}
-				if (maxTime < message.moment) {
-					maxTime = message.moment;
+				if (this.maxTime < message.moment) {
+					this.maxTime = message.moment;
 				}
 			}
-			numberOfGenerals++;
-			maxTime++;
-			body.append("p").text(`${numberOfGenerals} generals, and ${maxTime} time slots`);
+			this.numberOfGenerals++;
+			this.maxTime++;
 
-			let generals = [];
-			const radius = 15 * numberOfGenerals;
-			for (let i = 0; i < numberOfGenerals; i++) {
+			this.generals = [];
+			const radius = 15 * this.numberOfGenerals;
+			for (let i = 0; i < this.numberOfGenerals; i++) {
 				let general = new General(i,
-					Math.round(width / 2 + radius * Math.cos(i * 2 * Math.PI / numberOfGenerals)),
-					Math.round(height / 2 + radius * Math.sin(i * 2 * Math.PI / numberOfGenerals))
+					Math.round(width / 2 + radius * Math.cos(i * 2 * Math.PI / this.numberOfGenerals)),
+					Math.round(height / 2 + radius * Math.sin(i * 2 * Math.PI / this.numberOfGenerals))
 				);
-				generals.push(general);
+				this.generals.push(general);
+			}
+
+			this.timeSlot = timeSlot;
+			if (!this.timeSlot) {
+				this.timeSlot = 1000;
+			}
+			this.current = 0;
+			this.interval = null;
+		}
+
+		draw(body) {
+			body.append("p").text(`${this.numberOfGenerals} generals, and ${this.maxTime} time slots`);
+			for (let general of this.generals) {
 				general.draw(body);
 			}
+		}
 
-			const timeSlot = 1000;
-			let current = 0;
-			const interval = setInterval(() => {
-				if (timeMessage.has(current)) {
-					let messages = timeMessage.get(current);
-					for (let message of messages) {
-						const source = generals[message.source];
-						const target = generals[message.target];
+		start(body) {
+			if (!this.interval) {
+				this.interval = setInterval(() => {
+					if (this.timeMessage.has(this.current)) {
+						let messages = this.timeMessage.get(this.current);
+						for (let message of messages) {
+							const source = this.generals[message.source];
+							const target = this.generals[message.target];
 
-						source.sendMessage(body, target, message, timeSlot);
-						// console.log(message);
+							source.sendMessage(body, target, message, this.timeSlot);
+						}
 					}
+					if (this.current === this.maxTime) {
+						console.log("Finished");
+						this.stop();
+						this.current = 0;
+					}
+					this.current++;
+				}, this.timeSlot);
+			}
+		}
+
+		stop() {
+			if (this.interval) {
+				clearInterval(this.interval);
+				this.interval = null;
+			}
+		}
+
+		isRunning() {
+			return this.interval;
+		}
+	}
+
+	$(document).ready(() => {
+		let byzVis = null;
+		d3.csv('larger.csv').then((data) => {
+			let body = d3.select("body div#byzvis");
+			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
+			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
+
+			byzVis = new ByzantineVisualization(data, width, height, 1000);
+			byzVis.draw(body);
+		});
+
+		$("#playPause").click(() => {
+			if (byzVis) {
+			    let body = d3.select("body div#byzvis");
+				if (byzVis.isRunning()) {
+					byzVis.stop();
+				} else {
+					byzVis.start(body);
 				}
-				if (current === maxTime) {
-					console.log("Finished");
-					clearInterval(interval);
-					current = 0;
-				}
-				current++;
-			}, timeSlot);
+			}
 		});
 	});
 </script>
