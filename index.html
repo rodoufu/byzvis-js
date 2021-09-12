@@ -1,32 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ByzVis</title>
-    <script type="text/javascript" src="js/d3.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>ByzVis</title>
+	<script type="text/javascript" src="js/d3.js"></script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"
+			integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+		  integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+		  integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
 </head>
 <body>
 <div class="container">
-    <div id="byzvis" class="container">
-    </div>
-    <div class="container fixed-bottom">
-        <div class="mb-3 row">
-            <div class="col-sm-2">
-                <button type="button" id="playPause" class="btn btn-primary">Play</button>
-            </div>
-            <div class="col-sm-10">
-                <label for="timeRange" class="form-label">Time range</label>
-                <input type="range" class="form-range" id="timeRange">
-            </div>
-        </div>
-    </div>
+	<div class="container">
+		<div class="mb-3 row">
+			<div class="col-sm-2">
+				<table class="table">
+					<caption>Count of messages</caption>
+					<thead>
+					<tr>
+						<th scope="col">Type</th>
+						<th scope="col">Count</th>
+					</tr>
+					</thead>
+					<tbody>
+					<tr>
+						<th scope="row">Success</th>
+						<td id="countSuccess">0</td>
+					</tr>
+					<tr>
+						<th scope="row">Tampered</th>
+						<td id="countTampered">0</td>
+					</tr>
+					<tr>
+						<th scope="row">Not delivered</th>
+						<td id="countNotDelivered">0</td>
+					</tr>
+					<tr>
+						<th scope="row">Unexpected</th>
+						<td id="countUnexpected">0</td>
+					</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="col-sm-10">
+				<div class="container" id="generalsTitle"></div>
+			</div>
+		</div>
+	</div>
+
+	<div id="byzvis" class="container"></div>
+
+	<div class="container fixed-bottom">
+		<div class="mb-3 row">
+			<div class="col-sm-2">
+				<button type="button" id="playPause" class="btn btn-primary">Play/Pause</button>
+				<select class="form-select" aria-label="Select the problem" id="selectProblem">
+					<option selected value="problems/example.csv">Example</option>
+					<option value="problems/16generals5moments.csv">15 generals 5 moments</option>
+				</select>
+			</div>
+			<div class="col-sm-10">
+				<label for="timeRange" class="form-label">Time range</label>
+				<input type="range" step="1" class="form-range" id="timeRange">
+			</div>
+		</div>
+	</div>
 </div>
 <script type="text/javascript">
 	"use strict";
@@ -56,6 +97,34 @@
 		}
 	}
 
+	class CountMessageType {
+		constructor(unexpected, success, notDelivered, tampered) {
+			this.unexpected = parseInt(unexpected || "0");
+			this.success = parseInt(success || "0");
+			this.notDelivered = parseInt(notDelivered || "0");
+			this.tampered = parseInt(tampered) || "0";
+		}
+
+		inc(message) {
+			if (message.isUnexpected()) {
+				this.unexpected++;
+			} else if (message.isSuccess()) {
+				this.success++;
+			} else if (message.isNotDelivered()) {
+				this.notDelivered++;
+			} else if (message.isTampered()) {
+				this.tampered++;
+			}
+		}
+
+		draw() {
+			$("td#countSuccess").html(this.success);
+			$("td#countNotDelivered").html(this.notDelivered);
+			$("td#countTampered").html(this.tampered);
+			$("td#countUnexpected").html(this.unexpected);
+		}
+	}
+
 	class General {
 		constructor(id, x, y) {
 			id = parseInt(id);
@@ -66,6 +135,7 @@
 
 		draw(body) {
 			body.append("svg").attr("width", 50).attr("height", 50).attr('class', `general ${this.id}`)
+				.attr('id', `${this.id}`)
 				.append('circle')
 				.attr('cx', 25)
 				.attr('cy', 25)
@@ -73,6 +143,10 @@
 				.attr('stroke', 'black')
 				.attr('fill', '#578430');
 			$(`svg.${this.id}`).css({top: this.y, left: this.x, position: 'absolute'});
+		}
+
+		remove() {
+			$(`svg#${this.id}`).remove();
 		}
 
 		async sendMessage(body, target, message, duration) {
@@ -105,14 +179,16 @@
 			this.maxTime = 0;
 
 			this.timeMessage = new Map();
+			this.scoreBoard = new Map();
 			for (let i = 0; i < data.length; i++) {
 				const message = new Message(data[i].moment, data[i].source, data[i].target, data[i].status);
-				let messages = [];
-				if (this.timeMessage.has(message.moment)) {
-					messages = this.timeMessage.get(message.moment);
-				}
+				let messages = this.timeMessage.get(message.moment) || [];
 				messages.push(message);
 				this.timeMessage.set(message.moment, messages);
+
+				let counter = this.scoreBoard.get(message.moment) || new CountMessageType();
+				counter.inc(message);
+				this.scoreBoard.set(message.moment, counter);
 
 				if (this.numberOfGenerals < message.source) {
 					this.numberOfGenerals = message.source;
@@ -126,6 +202,19 @@
 			}
 			this.numberOfGenerals++;
 			this.maxTime++;
+			let tempScoreBoard = this.scoreBoard;
+			this.scoreBoard = new Map();
+			for (let i = 0; i < this.maxTime; i++) {
+				let counter = tempScoreBoard.get(i) || new CountMessageType();
+				if (i > 0) {
+					let previous = this.scoreBoard.get(i - 1);
+					counter.success += parseInt(previous.success);
+					counter.unexpected += parseInt(previous.unexpected);
+					counter.notDelivered += parseInt(previous.notDelivered);
+					counter.tampered += parseInt(previous.tampered);
+				}
+				this.scoreBoard.set(i, counter);
+			}
 
 			this.generals = [];
 			const radius = 15 * this.numberOfGenerals;
@@ -145,14 +234,28 @@
 			this.interval = null;
 		}
 
-		draw(body) {
-			body.append("p").text(`${this.numberOfGenerals} generals, and ${this.maxTime} time slots`);
+		draw(body, timeRange) {
+			d3.select("div #generalsTitle").append("p").attr('id', `title`)
+				.text(`${this.numberOfGenerals} generals, and ${this.maxTime} time slots`);
+
 			for (let general of this.generals) {
 				general.draw(body);
 			}
+			$(timeRange).attr({
+				"min": 0,
+				"max": this.maxTime,
+				"value": 0,
+			});
 		}
 
-		start(body) {
+		remove() {
+			for (let general of this.generals) {
+				general.remove();
+			}
+			$('p#title').remove();
+		}
+
+		start(body, timeRange) {
 			if (!this.interval) {
 				this.interval = setInterval(() => {
 					if (this.timeMessage.has(this.current)) {
@@ -164,12 +267,19 @@
 							source.sendMessage(body, target, message, this.timeSlot);
 						}
 					}
+
+					$(timeRange).val(this.current);
 					if (this.current === this.maxTime) {
 						console.log("Finished");
 						this.stop();
 						this.current = 0;
+						$(timeRange).val(0);
+						new CountMessageType().draw();
+					} else {
+						let currentScore = this.scoreBoard.get(this.current);
+						currentScore.draw();
+						this.current++;
 					}
-					this.current++;
 				}, this.timeSlot);
 			}
 		}
@@ -186,26 +296,49 @@
 		}
 	}
 
-	$(document).ready(() => {
-		let byzVis = null;
-		d3.csv('problems/larger.csv').then((data) => {
-			let body = d3.select("body div#byzvis");
+	function loadAndDraw(body, timeRange, selectProblem, byzVis, response) {
+		if (byzVis) {
+			byzVis.remove();
+		}
+		d3.csv($(selectProblem).val()).then((data) => {
 			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
-			byzVis = new ByzantineVisualization(data, width, height, 1000);
-			byzVis.draw(body);
+			let byzVis = new ByzantineVisualization(data, width, height, 1000);
+			byzVis.draw(body, timeRange);
+			response(byzVis);
+		});
+	}
+
+	$(document).ready(() => {
+		let byzVis = null;
+		let body = d3.select("body div#byzvis");
+		let timeRange = $("input#timeRange");
+		let selectProblem = $("select#selectProblem");
+
+
+		loadAndDraw(body, timeRange, selectProblem, byzVis, (bv) => {
+			byzVis = bv;
 		});
 
 		$("#playPause").click(() => {
 			if (byzVis) {
-				let body = d3.select("body div#byzvis");
 				if (byzVis.isRunning()) {
 					byzVis.stop();
 				} else {
-					byzVis.start(body);
+					byzVis.start(body, timeRange);
 				}
 			}
+		});
+
+		$(timeRange).change(() => {
+			byzVis.current = parseInt($(timeRange).val());
+		});
+
+		$(selectProblem).change(() => {
+			loadAndDraw(body, timeRange, selectProblem, byzVis, (bv) => {
+				byzVis = bv;
+			});
 		});
 	});
 </script>
