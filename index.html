@@ -79,7 +79,7 @@
 		}
 
 		isUnexpected() {
-			return this.status === 0;
+			return !(this.isSuccess() || this.isTampered() || this.isNotDelivered());
 		}
 
 		isSuccess() {
@@ -207,7 +207,7 @@
 				.attr('width', 20)
 				.attr('height', 20)
 				.attr('stroke', 'black')
-				.attr('fill', '#69c2ef');
+				.attr('fill', message.isUnexpected() ? '#bf0000' : '#69c2ef');
 			$(`svg.message${msgId}`).css({top: this.y, left: this.x, position: 'absolute'});
 
 			let transition = msg.transition()
@@ -278,7 +278,7 @@
 
 			this.timeSlot = timeSlot;
 			if (!this.timeSlot) {
-				this.timeSlot = 2000;
+				this.timeSlot = 1000;
 			}
 			this.current = 0;
 			this.interval = null;
@@ -346,12 +346,12 @@
 		}
 
 		updateScore() {
-			let currentScore = this.scoreBoard.get(this.current);
+			let currentScore = this.scoreBoard.get(Math.min(this.current, this.maxTime - 1));
 			currentScore.draw();
 		}
 	}
 
-	function loadAndDraw(body, timeRange, selectProblem, byzVis, response) {
+	function loadAndDraw(body, timeRange, selectProblem, byzVis, timeSlot, response) {
 		if (byzVis) {
 			byzVis.remove();
 		}
@@ -359,7 +359,7 @@
 			const width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 			const height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 
-			let byzVis = new ByzantineVisualization(data, width, height, 1000);
+			let byzVis = new ByzantineVisualization(data, width, height, timeSlot);
 			byzVis.draw(body, timeRange);
 			response(byzVis);
 		});
@@ -383,13 +383,13 @@
 			$('<option/>').val(`problems/${fileName}`).text(fileText).appendTo('#selectProblem');
 		}
 
+		const timeSlot = 2000;
 		let byzVis = null;
 		let body = d3.select("body div#byzvis");
 		let timeRange = $("input#timeRange");
 		let selectProblem = $("select#selectProblem");
 
-
-		loadAndDraw(body, timeRange, selectProblem, byzVis, (bv) => {
+		loadAndDraw(body, timeRange, selectProblem, byzVis, timeSlot, (bv) => {
 			byzVis = bv;
 		});
 
@@ -404,12 +404,14 @@
 		});
 
 		$(timeRange).change(() => {
-			byzVis.current = parseInt($(timeRange).val());
-			byzVis.updateScore();
+			if (byzVis) {
+				byzVis.current = parseInt($(timeRange).val());
+				byzVis.updateScore();
+			}
 		});
 
 		$(selectProblem).change(() => {
-			loadAndDraw(body, timeRange, selectProblem, byzVis, (bv) => {
+			loadAndDraw(body, timeRange, selectProblem, byzVis, timeSlot, (bv) => {
 				byzVis = bv;
 			});
 		});
