@@ -1,75 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>ByzVis</title>
-	<script type="text/javascript" src="js/d3.js"></script>
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"
-			integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
-		  integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
-		  integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ByzVis</title>
+    <script type="text/javascript" src="js/d3.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+            integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-F3w7mX95PdgyTmZZMECAngseQB83DfGTowi0iMjiWaeVhAn4FJkqJByhZMI3AhiU" crossorigin="anonymous">
 </head>
 <body>
 <div class="container">
-	<div class="container">
-		<div class="mb-3 row">
-			<div class="col-sm-2">
-				<table class="table">
-					<caption>Count of messages</caption>
-					<thead>
-					<tr>
-						<th scope="col">Type</th>
-						<th scope="col">Count</th>
-					</tr>
-					</thead>
-					<tbody>
-					<tr>
-						<th scope="row">Success</th>
-						<td id="countSuccess">0</td>
-					</tr>
-					<tr>
-						<th scope="row">Tampered</th>
-						<td id="countTampered">0</td>
-					</tr>
-					<tr>
-						<th scope="row">Not delivered</th>
-						<td id="countNotDelivered">0</td>
-					</tr>
-					<tr>
-						<th scope="row">Unexpected</th>
-						<td id="countUnexpected">0</td>
-					</tr>
-					</tbody>
-				</table>
-			</div>
-			<div class="col-sm-10">
-				<div class="container" id="generalsTitle"></div>
-			</div>
-		</div>
-	</div>
+    <div class="container">
+        <div class="mb-3 row">
+            <div class="col-sm-2">
+                <table class="table">
+                    <caption>Count of messages</caption>
+                    <thead>
+                    <tr>
+                        <th scope="col">Type</th>
+                        <th scope="col">Count</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <th scope="row">Success</th>
+                        <td id="countSuccess">0</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Tampered</th>
+                        <td id="countTampered">0</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Not delivered</th>
+                        <td id="countNotDelivered">0</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Unexpected</th>
+                        <td id="countUnexpected">0</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="col-sm-10">
+                <div class="container" id="generalsTitle"></div>
+            </div>
+        </div>
+    </div>
 
-	<div id="byzvis" class="container"></div>
+    <div id="byzvis" class="container"></div>
 
-	<div class="container fixed-bottom">
-		<div class="mb-3 row">
-			<div class="col-sm-2">
-				<button type="button" id="playPause" class="btn btn-primary">Play/Pause</button>
-				<select class="form-select" aria-label="Select the problem" id="selectProblem">
-					<option selected value="problems/example.csv">Example</option>
-					<option value="problems/16generals5moments.csv">15 generals 5 moments</option>
-					<option value="problems/4generals4moments.csv">4 generals 4 moments</option>
-					<option value="problems/4generals4moments2x.csv">4 generals 4 moments 8 messages</option>
-				</select>
-			</div>
-			<div class="col-sm-10">
-				<label for="timeRange" class="form-label">Time range</label>
-				<input type="range" step="1" class="form-range" id="timeRange">
-			</div>
-		</div>
-	</div>
+    <div class="container fixed-bottom">
+        <div class="mb-3 row">
+            <div class="col-sm-2">
+                <button type="button" id="playPause" class="btn btn-primary">Play/Pause</button>
+                <select class="form-select" aria-label="Select the problem" id="selectProblem">
+                </select>
+            </div>
+            <div class="col-sm-10">
+                <label for="timeRange" class="form-label">Time range</label>
+                <input type="range" step="1" class="form-range" id="timeRange">
+            </div>
+        </div>
+    </div>
 </div>
 <script type="text/javascript">
 	"use strict";
@@ -124,6 +120,10 @@
 			$("td#countNotDelivered").html(this.notDelivered);
 			$("td#countTampered").html(this.tampered);
 			$("td#countUnexpected").html(this.unexpected);
+		}
+
+		total() {
+			return this.success + this.notDelivered + this.tampered + this.unexpected;
 		}
 	}
 
@@ -239,15 +239,16 @@
 
 			this.timeSlot = timeSlot;
 			if (!this.timeSlot) {
-				this.timeSlot = 1000;
+				this.timeSlot = 2000;
 			}
 			this.current = 0;
 			this.interval = null;
 		}
 
 		draw(body, timeRange) {
+			let totalOfMessages = this.scoreBoard.get(this.maxTime - 1).total();
 			d3.select("div #generalsTitle").append("p").attr('id', `title`)
-				.text(`${this.numberOfGenerals} generals, and ${this.maxTime} time slots`);
+				.text(`${this.numberOfGenerals} generals, ${this.maxTime} time slots, and total of ${totalOfMessages} messages`);
 
 			for (let general of this.generals) {
 				general.draw(body);
@@ -325,7 +326,24 @@
 		});
 	}
 
+	const filenames = [
+		"16_generals_5_moments_6_messages.csv", "6_generals_5_moments_20_messages.csv",
+		"4_generals_2_moments_3_messages.csv", "14_generals_10_moments_60_messages.csv",
+		"10_generals_5_moments_50_messages.csv", "16_generals_10_moments_30_messages.csv",
+		"5_generals_5_moments_20_messages.csv", "17_generals_10_moments_50_messages.csv",
+		"13_generals_10_moments_60_messages.csv", "17_generals_10_moments_60_messages.csv",
+		"6_generals_10_moments_30_messages.csv", "12_generals_10_moments_60_messages.csv",
+		"4_generals_4_moments_8_messages.csv", "4_generals_4_moments_4_messages.csv",
+		"10_generals_10_moments_50_messages.csv", "5_generals_10_moments_30_messages.csv",
+	];
+
 	$(document).ready(() => {
+		filenames.sort();
+		for (let fileName of filenames) {
+			let fileText = fileName.replaceAll("_", " ").replace(".csv", "");
+			$('<option/>').val(`problems/${fileName}`).text(fileText).appendTo('#selectProblem');
+		}
+
 		let byzVis = null;
 		let body = d3.select("body div#byzvis");
 		let timeRange = $("input#timeRange");
