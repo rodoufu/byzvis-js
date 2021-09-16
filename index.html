@@ -160,9 +160,47 @@
 			$(`svg#${this.id}`).remove();
 		}
 
+		drawLine(body, target, msgId, msgSizeX, msgSizeY) {
+			let lineSizeX = Math.abs(target.x - this.x) + Math.round(msgSizeX / 2);
+			let lineSizeY = Math.abs(target.y - this.y) + Math.round(msgSizeY / 2);
+			let line = body.append("svg").attr('class', `line${msgId}`)
+				.attr("width", lineSizeX)
+				.attr("height", lineSizeY);
+			const lineX = Math.min(this.x, target.x);
+			const lineY = Math.min(this.y, target.y);
+			$(`svg.line${msgId}`).css({
+				top: lineY,
+				left: lineX,
+				position: 'absolute'
+			});
+			let lineStartX = Math.round(msgSizeX / 2);
+			let lineStartY = Math.round(msgSizeY / 2);
+			if (target.y > this.y) {
+				let temp = lineStartY;
+				lineStartY = lineSizeY;
+				lineSizeY = temp;
+			}
+			if (target.x > this.x) {
+				let temp = lineStartX;
+				lineStartX = lineSizeX;
+				lineSizeX = temp;
+			}
+			line.append('line').style("stroke", "lightgray")
+				.attr("x1", lineStartX)
+				.attr("y1", lineStartY)
+				.attr("x2", lineSizeX)
+				.attr("y2", lineSizeY);
+			return line;
+		}
+
 		async sendMessage(body, target, message, duration) {
 			let msgId = `${this.id}to${target.id}`;
-			let msg = body.append("svg").attr("width", 50).attr("height", 50).attr('class', `message ${msgId}`);
+			const msgSizeX = 50;
+			const msgSizeY = 50;
+
+			const line = this.drawLine(body, target, msgId, msgSizeX, msgSizeY);
+
+			let msg = body.append("svg").attr("width", msgSizeX).attr("height", msgSizeY).attr('class', `message${msgId}`);
 			let rect = msg.append("rect")
 				.attr('x', 15)
 				.attr('y', 15)
@@ -170,7 +208,7 @@
 				.attr('height', 20)
 				.attr('stroke', 'black')
 				.attr('fill', '#69c2ef');
-			$(`svg.${msgId}`).css({top: this.y, left: this.x, position: 'absolute'});
+			$(`svg.message${msgId}`).css({top: this.y, left: this.x, position: 'absolute'});
 
 			let transition = msg.transition()
 				.attr("style", `top: ${target.y}px; left: ${target.x}px; position: absolute;`);
@@ -181,6 +219,7 @@
 			}
 			await transition.duration(duration).end();
 			msg.transition().remove();
+			line.remove();
 		}
 	}
 
